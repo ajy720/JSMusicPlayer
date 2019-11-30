@@ -1,49 +1,74 @@
 class PlayList {
-    constructor(el, app){
+    constructor(el, app) {
         this.app = app;
         this.listDom = document.querySelector(el);
         this.itemList = this.listDom.querySelector(".item-list");
         this.itemList.innerHTML = "";
+
         this.fileList = [];
         this.idx = 0;
         this.addEvent();
     }
 
-    addEvent(){
-        document.querySelector("#openDialog").addEventListener("click", ()=>{            
+    addEvent() {
+        document.querySelector("#openDialog").addEventListener("click", () => {
             document.querySelector("#audioFile").click();
         });
-        document.querySelector("#audioFile").addEventListener("change", (e)=>{
+        document.querySelector("#audioFile").addEventListener("change", (e) => {
             let files = e.target.files;
-            
-            for(let i = 0; i < files.length; i++){
-                let file = files[i];
-                if(file.type.substring(0, 5) !== "audio"){
-                    return;
-                }
 
-                let item = document.createElement("li");
-                item.classList.add("item");
-                item.innerHTML = file.name;
+            this.addFileList(files);
 
-                item.dataset.idx = this.idx;
-                let obj = {id:this.idx++, file:file, dom:item};
-                this.fileList.push(obj);
-
-                //아이템이 클릭되었을 때 할 작업
-                item.addEventListener("dblclick", (e)=>{
-                    //let items = this.listDom.querySelectorAll(".item");
-                    this.fileList.forEach(x=>{
-                        x.dom.classList.remove("active");
-                    })
-                    item.classList.add("active");
-                    this.app.player.loadMusic(file);
-                });
-
-                this.itemList.appendChild(item);
-            }
             e.target.value = "";
         });
+
+        this.listDom.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        })
+
+        this.listDom.addEventListener("drop", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            let files = e.dataTransfer.files;
+
+            this.addFileList(files);
+        })
     }
 
+    addFileList(files) {
+        for (let i = 0; i < files.length; i++) {
+            let file = files[i];
+            if (file.type.substring(0, 5) !== "audio") {
+                return;
+            }
+
+            let item = document.createElement("li");
+            item.classList.add("item");
+            item.innerHTML = file.name;
+
+            item.dataset.idx = this.idx;
+            let obj = { id: this.idx++, file: file, dom: item };
+            this.fileList.push(obj);
+
+            //아이템이 클릭되었을 때 할 작업
+            item.addEventListener("dblclick", (e) => {
+                //let items = this.listDom.querySelectorAll(".item");
+                this.fileList.forEach(x => {
+                    x.dom.classList.remove("active");
+                })
+                item.classList.add("active");
+                this.app.player.loadMusic(file);
+            });
+
+            item.addEventListener("contextmenu", (e)=>{
+                e.preventDefault();
+                e.stopPropagation();
+                this.app.openContext(e);
+            });
+
+            this.itemList.appendChild(item);
+        }
+    }
 }

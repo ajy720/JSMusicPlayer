@@ -13,6 +13,43 @@ class App {
     constructor(playerEl, listEl){
         this.player = new Player(playerEl, this);
         this.list = new PlayList(listEl, this);
+        
+        this.contextItem = null;
+        this.contextMenu = document.querySelector("#contextMenu");
+
+        this.addEvent();
+    }
+
+    addEvent(){
+        document.addEventListener("click", (e)=>{
+            if(this.contextItem != null){
+                this.closeContext();
+            }
+        });
+
+        document.querySelector("#del").addEventListener("click", ()=>{
+            if(this.contextItem == null) return;
+            //this.list.itemList.removeChild(this.contextItem);
+            this.contextItem.remove();
+        })
+    }
+
+    openContext(e){
+        this.contextItem = e.target;
+        this.contextMenu.classList.add("on");
+        setTimeout(() => {
+            this.contextMenu.classList.add("visible");              
+            this.contextMenu.style.left = e.clientX + "px";
+            this.contextMenu.style.top = e.clientY + "px";
+        }, 10);
+    }
+
+    closeContext(){
+        this.contextItem = null;
+        this.contextMenu.classList.remove("visible");
+        setTimeout(() => {
+            this.contextMenu.classList.remove("on");
+        }, 400);
     }
 }
 
