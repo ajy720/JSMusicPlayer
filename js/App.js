@@ -29,7 +29,14 @@ class App {
 
         document.querySelector("#del").addEventListener("click", ()=>{
             if(this.contextItem == null) return;
-            //this.list.itemList.removeChild(this.contextItem);
+            
+            const l = this.list.fileList;
+            let idx = l.findIndex(x => x.dom == this.contextItem)
+            let removedItem = l.splice(idx, 1);
+            if(removedItem[0] == this.list.playItem){//재생중인 노래가 삭제되었다면
+                this.list.getNextMusic(this.player.repeatMode == REPEATMODE.LIST);
+            }
+
             this.contextItem.remove();
         })
     }

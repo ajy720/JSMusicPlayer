@@ -1,3 +1,9 @@
+const REPEATMODE ={
+    "NO" : 0,
+    "ONE" : 1,
+    "LIST" : 2
+};
+
 class Player {
     constructor(el, app){
         this.app = app;
@@ -15,11 +21,46 @@ class Player {
         this.progress = this.playerDom.querySelector(".progress");
         this.playBtn = this.playerDom.querySelector("#playBtn");
 
+        this.canvas = document.querySelector("#myCanvas");
+        this.ctx = this.canvas.getContext("2d");
+
+        this.visualInfo = {
+            aCtx: null,
+            analyser: null,
+            dataArray:[],
+            barHeight:0,
+            x:0,
+            barWidth:0
+        }
+
+        //this.repeatMode = 0; //반복 안함.
+        this.repeatMode = REPEATMODE.NO;
+        this.modeBtnList = document.querySelectorAll(".mode-btn > input");
+
         this.addEvent();
 
         requestAnimationFrame(()=>{
             this.frame();
         });
+
+    }
+    
+    initVisual(){
+        let v = document.querySelector("#visualizer");
+        this.canvas.width =  v.clientWidth;
+        this.canvas.height = v.clientHeight
+        this.visualInfo.aCtx = new AudioContext(); //오디오 정보들을 다룰 수 있는 context
+        let src = this.visualInfo.aCtx.createMediaElementSource(this.audio);
+        const analyser = this.visualInfo.analyser = this.visualInfo.aCtx.createAnalyser();
+        src.connect(this.visualInfo.aCtx.destination);
+        src.connect(analyser);
+        analyser.fftSize = 2048;
+
+        const W = this.canvas.width;
+        const bufferLength = analyser.frequencyBinCount;
+
+        this.visualInfo.barWidth = ((W+110) / (bufferLength + 1));
+        this.visualInfo.dataArray = new Uint8Array(bufferLength);
     }
 
     addEvent(){
@@ -35,12 +76,37 @@ class Player {
             this.play();            
         });
 
+        this.audio.addEventListener("ended", (e)=>{
+            this.musicEnd();
+        });
+
         this.progress.addEventListener("click", (e)=>{
             this.changeSeeking(e);
         })
+
+        this.modeBtnList.forEach(btn => {
+            btn.addEventListener("click", (e)=>{
+                this.repeatMode = e.target.value * 1; //숫자로 형변환
+            })
+        })
+    }
+
+    musicEnd(){
+        if(this.repeatMode == REPEATMODE.ONE){
+            this.audio.currentTime = 0;
+            this.audio.play();           
+        }else if(this.repeatMode == REPEATMODE.LIST){
+            this.app.list.getNextMusic(true);
+        }else if(this.repeatMode == REPEATMODE.NO){
+            this.app.list.getNextMusic(false);
+        }
     }
 
     loadMusic(file){
+        if(this.visualInfo.aCtx == null){
+            this.initVisual();
+        }
+
         let fileURL = URL.createObjectURL(file);
         this.audio.src = fileURL;
         this.filename.innerHTML = file.name;
@@ -82,6 +148,31 @@ class Player {
         this.cTime.innerHTML = c.timeFormat();
         this.dTime.innerHTML = d.timeFormat();
     
+        this.visualInfo.analyser.getByteFrequencyData(this.visualInfo.dataArray);
+        
+        const W = this.canvas.width;
+        const H = this.canvas.height;
+
+        const ctx = this.ctx;
+        ctx.fillStyle = "rgba(0,0,0,0.2)";
+        ctx.fillRect(0,0,W,H);
+
+        const arr = this.visualInfo.dataArray;
+        const w = this.visualInfo.barWidth;
+        let x = 0;
+        ctx.fillStyle = "#3f51b5";
+        for(let i = 0; i < arr.length; i++){
+            let h = H * arr[i] / 255;
+            ctx.fillStyle = this.getColor(h);
+            ctx.fillRect(x, H-h, w, h);
+            x += w;
+        }
+    }
+
+    getColor(value){
+        //value 값에 따라서 색상을 다르게 리턴하는 메서드를 만들어보세요.
+        return `rgb(${255-value*2},${255-value},${255-value})`;
+
     }
 
     changeSeeking(e){

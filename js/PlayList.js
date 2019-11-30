@@ -7,6 +7,7 @@ class PlayList {
 
         this.fileList = [];
         this.idx = 0;
+        this.playItem = null;
         this.addEvent();
     }
 
@@ -16,25 +17,42 @@ class PlayList {
         });
         document.querySelector("#audioFile").addEventListener("change", (e) => {
             let files = e.target.files;
-
             this.addFileList(files);
-
             e.target.value = "";
         });
 
         this.listDom.addEventListener("dragover", (e) => {
             e.preventDefault();
             e.stopPropagation();
-        })
+        });
 
         this.listDom.addEventListener("drop", (e) => {
             e.preventDefault();
             e.stopPropagation();
-
             let files = e.dataTransfer.files;
-
             this.addFileList(files);
-        })
+        });
+    }
+
+    getNextMusic(loop){
+        let current = this.fileList.findIndex(x => x == this.playItem); //현재 재생중인 곡의 인덱스
+
+        if (current < this.fileList.length - 1){
+            this.playMusic(this.fileList[current + 1]);
+        }else if (loop && this.fileList.length != 0){
+            this.playMusic(this.fileList[0]);
+        }
+
+        this.app.player.audio.pause();
+    }
+
+    playMusic(obj){
+        this.fileList.forEach(x => {
+            x.dom.classList.remove("active");
+        });
+        obj.dom.classList.add("active");
+        this.playItem = obj;
+        this.app.player.loadMusic(obj.file);
     }
 
     addFileList(files) {
@@ -54,14 +72,9 @@ class PlayList {
 
             //아이템이 클릭되었을 때 할 작업
             item.addEventListener("dblclick", (e) => {
-                //let items = this.listDom.querySelectorAll(".item");
-                this.fileList.forEach(x => {
-                    x.dom.classList.remove("active");
-                })
-                item.classList.add("active");
-                this.app.player.loadMusic(file);
+                this.playMusic(obj);
             });
-
+            
             item.addEventListener("contextmenu", (e)=>{
                 e.preventDefault();
                 e.stopPropagation();
@@ -71,4 +84,5 @@ class PlayList {
             this.itemList.appendChild(item);
         }
     }
+
 }
